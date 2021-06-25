@@ -8,7 +8,7 @@ function getP1(){
 
     console.log(turno);
     console.log(estado);
-    document.getElementById("log").innerHTML+=estado;
+    document.getElementById("log").innerHTML+=53;
 
 
 }
