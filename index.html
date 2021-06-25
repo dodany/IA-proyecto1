@@ -1,6 +1,5 @@
 <html>
 <body>
-<p id="log"></p>
 <script>
     let params = new URLSearchParams(location.search);
     var turno= params.get('turno');
@@ -8,7 +7,8 @@
 
     console.log(turno);
     console.log(estado);
-    document.getElementById("log").innerHTML+=53;
+    document.write(53);
+    
 </script>
 </body>
 </html>
