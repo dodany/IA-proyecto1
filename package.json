@@ -1,0 +1,23 @@
+{
+  "name": "ia",
+  "version": "1.0.0",
+  "description": "project 1",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dodany/IA-proyecto1.git"
+  },
+  "author": "Dodany",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dodany/IA-proyecto1/issues"
+  },
+  "homepage": "https://github.com/dodany/IA-proyecto1#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
