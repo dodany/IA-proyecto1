@@ -7,186 +7,161 @@ var estado; //ENTRADA
 var respuesta; //RESPUESTA
 var board = [];  //tablero
 var dir = [1, -1];  // ARRAY EN DOS DIRECCIONES
-var checkPlay = { 'w': 1, 'b': -1, ' ': 0 }  // converts player colour into a number. This alows enemy pieces to be found by multiplying current by -1
-var gameMode = 1;  // 0 - AIvsAI, 1 - 1player, 2 - 2player 
-var passCount = 0;  // how many consecutive passes have occured
-var player;  // jugador
-var move;  // stores a reference to the timeout function which allows it to be cleared on new game
+var checkPlay = { 'w': 1, 'b': -1, ' ': 0 }  // CONVIERTE EL COLOR DEL JUGADOR EN NÚMERO. PARA ENCONTRAR PIEZAS ENEMIGAS
+var gameMode = 1;  // 1 - 1player
+var passCount = 0;  // CUANTAS VECES CONSECUTIVAS PASA
+var player;  // JUGADOR
 
 express()
     .use(express.static(path.join(__dirname, 'public')))
     .get('/', function (req, res) {
-        turno = req.query.turno
-        estado = req.query.estado
+        turno = req.query.turno; //TURNO
+        estado = req.query.estado; //ESTADO
         newGame()
-
-        res.send(String(respuesta));
+        res.send(String(respuesta));  //RESPONSE
     })
     .listen(PORT, () => console.log(`Listening on ${PORT}`))
 
 //OBTIENE LA MATRIZ DE LA ENTRADA 
-function convertArreglo(estado) {
+function convertArray(estado) {
     console.log("converArreglo(estado");
     var tablero = [];     //DECLARAR LA MATRIZ
     for (var i = 0; i < 64; i = i + 8) {
-        tablero.push(fila_(estado.slice(i, i + 8)));  //INSERTA CADA 8   
+        tablero.push(row_(estado.slice(i, i + 8)));  //INSERTA CADA 8   
     }
     return tablero; //DEVUELVE LA MATRIZ
 }
 
 //OBTIENE LA FILA DE LA ENTRADA
-function fila_(slice_) {
-    var fila = [];
+function row_(slice_) {
+    var fila = [];  //DECLARA LA FILA
     for (var i = 0; i < 8; i = i + 1) {
         fila.push(letter(slice_.slice(i, i + 1)));
     }
-    return fila
+    return fila;  //DEVUELVE LA FILA
 }
 
+//OBTIENE LA LETRA EN JUEGO DEL ESTADO 
 function letter(value) {
-    if (value == '0') {
+    if (value == '0') { //NEGRO
         return 'b';
-    } else if (value == '1') {
+    } else if (value == '1') { //BLANCO
         return 'w';
     } else {
-        return ' ';
+        return ' '; // VACÍO =2
     }
 }
 
-function newGame() {
-    console.log("newGame(init=false)");
-    player = letter(turno);
-    board = convertArreglo(estado);
-    renderBoard();
-    console.log("fin");
+//NUEVO TURNO 
+function newGame() {    
+    player = letter(turno); //EL JUEGADOR
+    board = convertArray(estado); //EL TABLERO    
+    
+    /* CREO UNA MATRIZ ASÍ
+    [[' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ','b','w',' ',' ',' '],
+    [' ',' ',' ','w','b',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ']]*/
+
+    renderBoard(); //REVISAR EL TABLERO
+    console.log("fin- newGame"); //FIN
 }
 
-function renderBoard() {  // renders the board
-    console.log("renderBoard(init=false)");
-    var gameOver = true, idealMove = [0, []];  // the score of the current ideal (highest capture) moves, followed by all the possible choices (row, col, direction)
-    board.forEach((row, r) => {  // loops over board rows
-        row.forEach((square, c) => {  // loops over the squares in the row
-            var direction = checkMove(board, r, c, player);  // checks the available moves for the board
-            if (board[r][c] == ' ' && direction.reduce((a, b) => a + b) != 0) {  // if the square is empty and a move can be made on it            
-                gameOver = false;  // the game isnt over as moves can be made
-                if (gameMode != 2) {  // if one of the ai options is enabled
-                    var score = direction.reduce(function (a, b) { return a + b }, 0);  // gets the sum of all captures in each direction
-                    console.log("score -> " + score);
-                    if (score > idealMove[0]) {  // if this move scores better than the previous option
-                        idealMove[0] = score;  // assigns the first item in the array to the new high score
-                        idealMove[1] = [[r, c, direction]]  // assigns the row, column and direction of the move to the second item in the array
-
-                    } else if (score == idealMove[0]) {  // if the score is equal to the previous
-                        idealMove[1].push([r, c, direction]);  // add another row, column and direction to the second item of the array
+//REVISAR EL TABLERO 
+function renderBoard() {      
+    var gameOver = true, idealMove = [0, []];  //VERIFICA LA PUNTUACIÓN DE LOS MOVIMIENTOS IDEALES
+    board.forEach((row, r) => {  // LOOP DE LAS FILAS
+        row.forEach((square, c) => {  // LOOP DE LAS COLUMNAS
+            var direction = checkMove(board, r, c, player);  // COMPRUEBA LOS MOVIMIENTOS DISPONIBLES
+            if (board[r][c] == ' ' && direction.reduce((a, b) => a + b) != 0) {  // SI ESTA VACÍO PUEDE HACER UN MOVIMIENTO EN ELLA
+                gameOver = false;  // NO SE TERMINA EL JUEGO
+                if (gameMode != 2) {  // MODO IA 
+                    var score = direction.reduce(function (a, b) { return a + b }, 0);  // OBTIENE LA SUMA DE CADA DIRECCION                    
+                    if (score > idealMove[0]) {  // EL MOVIMIENTO PUNTUA MEJOR QUE LA OPCIÓN ANTERIOR
+                        idealMove[0] = score;  // ASIGNA EL PRIMER ELEMENTO DE LA MATRIZ MÁS ALTA
+                        idealMove[1] = [[r, c, direction]] 
+                    } else if (score == idealMove[0]) {  // SI LA PUNTUACIÓN ES IGUAL A LA ANTERIOR
+                        idealMove[1].push([r, c, direction]);  // AGREGA OTRA FILA Y COLUMNA Y DIRECCION AL OTRO ELEMENTO DE LA MATRIZ
                     }
-                }
-                if (gameMode == 2 || (gameMode == 1 && player == '0')) {
-                    console.log("acá no entra nunca");
-                    boardSquare.onclick = () => placePiece(r, c, direction);  // if its a humans move, allow the player to click the squares
-                }
+                }                
             }
         });
     });
 
-    var find = findTotal(board);
-    console.log("find ->" + find);
-    if (!gameOver) {
-        passCount = 0;  // reset pass count as a move has occured
-        if (gameMode == 1) {  // if the game mode is 1player
-            console.log("Aqui es");
-            console.log("idealMove -> " + idealMove);
-            if (player == 'w') { // if the current player is the AI then pick a random ideal move from the array of moves in 700 milliseconds
-                placePiece(...idealMove[1][Math.floor(Math.random() * idealMove[1].length)].slice())
-            }
-        } else if (gameMode == 0) {  // else if the game mode is AI vs AI            
-            move = setTimeout(function () { placePiece(...idealMove[1][Math.floor(Math.random() * idealMove[1].length)].slice()) }, e.options[e.selectedIndex].value);  // if the current player is the AI then pick a random ideal move from the array of moves after the dealy defined by the html dropdown
-        } else if (gameMode == 2) {  // else if the game mode is 2 player
-        }
-    } else if (!find) {  // if there are still empty spaces available to play
-        setTimeout(function () { pass() }, 1);  // pass the current players go automatically
+    var find = findTotal(board);   // VERIFICA SI EL JUEGO NO SE HA TERMINADO 
+    if (!gameOver) { //NO TERMINA EL JUEGO 
+        passCount = 0;  //RESETEO LA VARIABLE PARA CONTAR LOS PASOS
+        if (gameMode == 1) {  // MODO DE JUEGO IA                           
+                placePiece(...idealMove[1][Math.floor(Math.random() * idealMove[1].length)].slice());  //VALOR DE LA FILA Y LA COLUMNA          
+        } 
+    } else if (!find) {  // SI TODAVÍA HAY ESPACIOS DISPONIBLES PARA JUGAR 
+        setTimeout(function () { pass() }, 1);  
     }
 }
 
-
+//LA RESPUESTA DEL JUEGO
 function placePiece(r, c, direction) {
-    console.log("placePiece r: ->" + r + " c: -> " + c + "direccion -> " + direction)
-    var fila = r.toString();
-    var columna = c.toString();
-    respuesta = fila + columna;
-    console.log("respuesta -> " + respuesta);
-    return respuesta;
+    console.log("RESPUESTA r: ->" + r + " c: -> " + c + " direccion -> " + direction);    
+    respuesta = r.toString() + c.toString();    //CONCATENAR LA FILA Y COLUMNA
+    return respuesta;  //ESTA ES LA RESPUESTA DEL JUEGO 
 }
 
-function capture(board, r, c, direction) {
-    console.log("capture");
-
-    for (var i = 0; i <= direction.length; i++) {  // loop over direction
-        for (var z = 1; z <= direction[i]; z++) {  // loop over amount in current direction
-            if (i < 2) { var x = dir[i] * z, y = 0; }  // first capture horizontal pieces...
-            else if (i < 4) { var x = 0, y = dir[i - 2] * z; }  // then vertical pieces...
-            else if (i < 6) { var x = dir[i - 4] * z, y = x; }  // then diagonal...
-            else { var x = dir[i - 6] * z, y = -x; }  // then the other diagonal
-            board[r - x][c - y] = player.toLowerCase();  // set current piece to players colour
-        }
-    }
-}
-
-function checkMove(board, r, c, player) {  // board, row, column, player
-    var direction = [0, 0, 0, 0, 0, 0, 0, 0]; // top bottom left right topLeft bottomRight BottomLeft TopRight
+//VERIFICA LOS MOVIMIENTOS
+function checkMove(board, r, c, player) {  // TABLERO, FILA , COLUMNA , JUGADOR
+    var direction = [0, 0, 0, 0, 0, 0, 0, 0]; // TOP, BOTTOM, LEFT, RIGHT ...
     for (var i = 0; i < 8; i++) {  // loops over the directions
-        if (i < 2) { var x = dir[i], y = 0; }  // first checks horizontal...
-        else if (i < 4) { var x = 0, y = dir[i - 2]; }  // then vertical...
-        else if (i < 6) { var x = dir[i - 4], y = x; }  // then diagonal...
-        else { var x = dir[i - 6], y = -x; }  // ..then the other diagonal
-        try {  // try because it may be referencing a coordinate that doesn't exist (off the board)
-            while (checkPlay[board[r - x][c - y]] == checkPlay[player] * -1) {  // while there are consecutive enemy peices
-                direction[i] += 1;  // increases the count of direction
-                if (i < 2) { x += dir[i]; }  // first incriments the horizontal...
-                else if (i < 4) { y += dir[i - 2]; }  // then the vertical...
-                else if (i < 6) { x += dir[i - 4]; y = x; }  // then diagonal...
-                else { x += dir[i - 6]; y = -x; }  // then the other diagonal
+        if (i < 2) { var x = dir[i], y = 0; }  // CHEQUEO HORIZONTAL
+        else if (i < 4) { var x = 0, y = dir[i - 2]; }  // CHEQUEO VERTICAL
+        else if (i < 6) { var x = dir[i - 4], y = x; }  // CHEQUEO DIAGONAL
+        else { var x = dir[i - 6], y = -x; }  // SINO LA OTRA DIAGONAL
+        try {  
+            while (checkPlay[board[r - x][c - y]] == checkPlay[player] * -1) {  // MIENTRAS HAYAN PIEZAS ENEMIGAS CONSECUTIVAS
+                direction[i] += 1;  // AUMENTAMOS LA DIRECTION
+                if (i < 2) { x += dir[i]; }  // INCREMENTO HORIZONTAL
+                else if (i < 4) { y += dir[i - 2]; }  //INCREMENTO VERTICAL
+                else if (i < 6) { x += dir[i - 4]; y = x; }  // INCREMENTO DIAGONAL
+                else { x += dir[i - 6]; y = -x; }  // INCREMENTO EN LA OTRA DIAGONAL
             }
-            if (board[r - x][c - y] != player) {  // if consective enemy pieces aren't surrounded by a friendly piece
-                direction[i] = 0;  // reset this direction to 0
+            if (board[r - x][c - y] != player) {  // SI LAS PIEZAS ENEMIGAS CONSECUTIVAS NO ESTÁN RODEADAS POR UNA PIEZA AMIGA
+                direction[i] = 0;  // RESET A 0
             }
-        } catch { // if the coordinate doesn't exist
-            direction[i] = 0;  // reset this direction to 0
+        } catch { //SI LA COORDENADA NO EXISTE
+            direction[i] = 0;  // RESET A 0
         }
     }
-    return direction  // return the result
+    return direction  // RETURN
 }
 
-// finds the total for each player
+// OBTIENE EL TOTAL POR JUGADOR
 function findTotal(board, end = false) {
-    board = board.map(r => r.slice()); // deep clone of array
-    var blackTotal = 0, whiteTotal = 0;  // reset totals
-    for (i = 0; i < board.length; i++) {  // loop over board rows
-        for (j = 0; j < board[i].length; j++) {  // loop over row squares
-            if (board[i][j] == 'w') {  // if current square has a white piece on it
-                whiteTotal += 1;  // incriment the white total
-            } else if (board[i][j] == 'b') {  // if current square has a black piece on it
-                blackTotal += 1;  // incriment black total
+    board = board.map(r => r.slice()); // TABLERO EN ARRAYS
+    var blackTotal = 0, whiteTotal = 0;  //  RESET DE BLANCAS Y NEGRAS
+    for (i = 0; i < board.length; i++) {  // LOOP POR ROWS
+        for (j = 0; j < board[i].length; j++) {  // LOOP POR COLUMNAS
+            if (board[i][j] == 'w') {  // SI LA PIEZA ES BLANCA
+                whiteTotal += 1;  // AUMENTAMOS
+            } else if (board[i][j] == 'b') {  // SINO ES NEGRA
+                blackTotal += 1;  // AUMENTAMOS
             }
         }
     }
-    if (whiteTotal + blackTotal == 64 || whiteTotal == 0 || blackTotal == 0 || end) {  // if the game is over
-        if (whiteTotal > blackTotal) {  // if white scored higher
-        } else if (blackTotal > whiteTotal) {  // if black scored higher           
-        } else {  // if neither scored higher            
-        }
-        return true  // true as game is over
+    if (whiteTotal + blackTotal == 64 || whiteTotal == 0 || blackTotal == 0 || end) {  //AQUÍ SE TERMINÓ EL JUEGO      
+        return true  // EL JUEGO TERMINÓ , GAME IS OVER 
     }
-    return false  // false as game is not over yet
+    return false  // EL JUEGO NO TERMINA
 }
 
-
-// passes the current players go
+// CUENTA LOS PASES DE LOS JUGADORES
 function pass() {
-    if (gameMode != 2 && passCount < 2) {  // if game mode is not 2 player and less than 2 consecutive passes have occured
-        passCount += 1;  // incriment pass count
-        player = (player == 'w') ? 'b' : 'w';  // switch current player
-        renderBoard();  // render changes
-    } else if (passCount >= 2) {  // no moves can be made as 2 passes occured (neither player can make a move)
-        findTotal(board, true);  // find the total as the game is over
+    if (gameMode != 2 && passCount < 2) {  // MENOS DE 2 PASOS CONSECUTIVOS
+        passCount += 1;  // INCREMENTO 
+        player = (player == 'w') ? 'b' : 'w';  // CAMBIO DE JUGADOR
+        renderBoard();  // REVISAMOS EL TABLERO
+    } else if (passCount >= 2) {  // NO SE PUEDE HACER ESTE MOVIMIENTO
+        findTotal(board, true);  // MANDAMOS A TERMINAR EL JUEGO
     }
 }
